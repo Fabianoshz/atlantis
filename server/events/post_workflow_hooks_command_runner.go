@@ -9,6 +9,7 @@ import (
 	"github.com/runatlantis/atlantis/server/events/command"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/events/vcs"
+	"github.com/runatlantis/atlantis/server/logging"
 )
 
 //go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_post_workflow_hook_url_generator.go PostWorkflowHookURLGenerator
@@ -59,24 +60,12 @@ func (w *DefaultPostWorkflowHooksCommandRunner) RunPostHooks(
 
 	log.Debug("post-hooks configured, running...")
 
-	unlockFn, err := w.WorkingDirLocker.TryLock(baseRepo.FullName, pull.Num, DefaultWorkspace, DefaultRepoRelDir)
-	if err != nil {
-		return err
-	}
-	log.Debug("got workspace lock")
-	defer unlockFn()
-
-	repoDir, _, err := w.WorkingDir.Clone(log, headRepo, pull, DefaultWorkspace)
-	if err != nil {
-		return err
-	}
-
 	var escapedArgs []string
 	if cmd != nil {
 		escapedArgs = escapeArgs(cmd.Flags)
 	}
 
-	err = w.runHooks(
+	err := w.runHooks(
 		models.WorkflowHookCommandContext{
 			BaseRepo:           baseRepo,
 			HeadRepo:           headRepo,
@@ -87,7 +76,11 @@ func (w *DefaultPostWorkflowHooksCommandRunner) RunPostHooks(
 			EscapedCommentArgs: escapedArgs,
 			HookID:             uuid.NewString(),
 		},
-		postWorkflowHooks, repoDir)
+		postWorkflowHooks,
+		log,
+		headRepo,
+		pull,
+		baseRepo.FullName)
 
 	if err != nil {
 		return err
@@ -99,10 +92,29 @@ func (w *DefaultPostWorkflowHooksCommandRunner) RunPostHooks(
 func (w *DefaultPostWorkflowHooksCommandRunner) runHooks(
 	ctx models.WorkflowHookCommandContext,
 	postWorkflowHooks []*valid.WorkflowHook,
-	repoDir string,
+	log logging.SimpleLogging,
+	headRepo models.Repo,
+	pull models.PullRequest,
+	repoFullName string,
 ) error {
-
 	for i, hook := range postWorkflowHooks {
+		workspace := hook.Workspace
+		if workspace == "" {
+			workspace = DefaultWorkspace
+		}
+
+		unlockFn, err := w.WorkingDirLocker.TryLock(repoFullName, pull.Num, workspace, DefaultRepoRelDir)
+		if err != nil {
+			return err
+		}
+		log.Debug("got workspace lock")
+		defer unlockFn()
+
+		repoDir, _, err := w.WorkingDir.Clone(log, headRepo, pull, workspace)
+		if err != nil {
+			return err
+		}
+
 		hookDescription := hook.StepDescription
 		if hookDescription == "" {
 			hookDescription = fmt.Sprintf("Post workflow hook #%d", i)
