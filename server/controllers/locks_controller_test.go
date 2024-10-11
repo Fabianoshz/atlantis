@@ -18,7 +18,6 @@ import (
 
 	"github.com/gorilla/mux"
 	. "github.com/petergtz/pegomock/v4"
-	"github.com/runatlantis/atlantis/server/events"
 
 	"github.com/runatlantis/atlantis/server/core/locking/mocks"
 	"github.com/runatlantis/atlantis/server/events/command"
@@ -279,8 +278,6 @@ func TestDeleteLock_UpdateProjectStatus(t *testing.T) {
 
 	cp := vcsmocks.NewMockClient()
 	l := mocks2.NewMockDeleteLockCommand()
-	workingDir := mocks2.NewMockWorkingDir()
-	workingDirLocker := events.NewDefaultWorkingDirLocker()
 	pull := models.PullRequest{
 		BaseRepo: models.Repo{FullName: repoName},
 	}
@@ -313,8 +310,6 @@ func TestDeleteLock_UpdateProjectStatus(t *testing.T) {
 		DeleteLockCommand: l,
 		Logger:            logging.NewNoopLogger(t),
 		VCSClient:         cp,
-		WorkingDirLocker:  workingDirLocker,
-		WorkingDir:        workingDir,
 		Backend:           backend,
 	}
 	req, _ := http.NewRequest("GET", "", bytes.NewBuffer(nil))
@@ -344,8 +339,6 @@ func TestDeleteLock_CommentFailed(t *testing.T) {
 		},
 	}, nil)
 	cp := vcsmocks.NewMockClient()
-	workingDir := mocks2.NewMockWorkingDir()
-	workingDirLocker := events.NewDefaultWorkingDirLocker()
 	var backend locking.Backend
 	tmp := t.TempDir()
 	backend, err := db.New(tmp)
@@ -355,8 +348,6 @@ func TestDeleteLock_CommentFailed(t *testing.T) {
 		DeleteLockCommand: dlc,
 		Logger:            logging.NewNoopLogger(t),
 		VCSClient:         cp,
-		WorkingDir:        workingDir,
-		WorkingDirLocker:  workingDirLocker,
 		Backend:           backend,
 	}
 	req, _ := http.NewRequest("GET", "", bytes.NewBuffer(nil))
@@ -371,8 +362,6 @@ func TestDeleteLock_CommentSuccess(t *testing.T) {
 	RegisterMockTestingT(t)
 	cp := vcsmocks.NewMockClient()
 	dlc := mocks2.NewMockDeleteLockCommand()
-	workingDir := mocks2.NewMockWorkingDir()
-	workingDirLocker := events.NewDefaultWorkingDirLocker()
 	var backend locking.Backend
 	tmp := t.TempDir()
 	backend, err := db.New(tmp)
@@ -393,8 +382,6 @@ func TestDeleteLock_CommentSuccess(t *testing.T) {
 		Logger:            logging.NewNoopLogger(t),
 		VCSClient:         cp,
 		Backend:           backend,
-		WorkingDir:        workingDir,
-		WorkingDirLocker:  workingDirLocker,
 	}
 	req, _ := http.NewRequest("GET", "", bytes.NewBuffer(nil))
 	req = mux.SetURLVars(req, map[string]string{"id": "id"})

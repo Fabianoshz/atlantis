@@ -868,8 +868,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Logger:             logger,
 		VCSClient:          vcsClient,
 		LockDetailTemplate: web_templates.LockTemplate,
-		WorkingDir:         workingDir,
-		WorkingDirLocker:   workingDirLocker,
 		Backend:            backend,
 		DeleteLockCommand:  deleteLockCommand,
 	}

@@ -24,8 +24,6 @@ type LocksController struct {
 	ApplyLocker        locking.ApplyLocker
 	VCSClient          vcs.Client
 	LockDetailTemplate web_templates.TemplateWriter
-	WorkingDir         events.WorkingDir
-	WorkingDirLocker   events.WorkingDirLocker
 	Backend            locking.Backend
 	DeleteLockCommand  events.DeleteLockCommand
 }
